@@ -40,6 +40,10 @@
       {
         "command": "spiki.pet",
         "title": "Spiki: Pet Spiki"
+      },
+      {
+        "command": "spiki.toggleEditorSpiki",
+        "title": "Spiki: Toggle Editor Spiki"
       }
     ],
     "viewsContainers": {
