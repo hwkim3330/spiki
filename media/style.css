@@ -154,9 +154,10 @@ body {
 /* 스피키 개체 */
 .spiki-creature {
     position: absolute;
-    cursor: pointer;
+    cursor: grab;
     z-index: 5;
     will-change: transform, left, top;
+    touch-action: none;
 }
 
 .spiki-creature img {

@@ -120,6 +120,10 @@
             this.imgElement = null;
             this.sleeping = false;
             this.direction = 1; // 1: right, -1: left
+            this.dragging = false;
+            this.dragStart = { x: 0, y: 0 };
+            this.dragOffset = { x: 0, y: 0 };
+            this.lastTap = 0;
 
             this.createElement();
             this.startWandering();
@@ -150,11 +154,6 @@
             this.element.appendChild(this.imgElement);
 
             // 드래그 & 클릭 이벤트
-            this.dragging = false;
-            this.dragStart = { x: 0, y: 0 };
-            this.dragOffset = { x: 0, y: 0 };
-            this.lastTap = 0;
-
             this.element.addEventListener('mousedown', (e) => this.onDragStart(e));
             this.element.addEventListener('touchstart', (e) => this.onDragStart(e), { passive: false });
 
@@ -206,6 +205,12 @@
         moveLoop() {
             const move = () => {
                 if (!this.element) return;
+
+                // 드래그 중이면 위치 업데이트 안함
+                if (this.dragging) {
+                    requestAnimationFrame(move);
+                    return;
+                }
 
                 // 목표를 향해 이동
                 const dx = this.targetX - this.x;
