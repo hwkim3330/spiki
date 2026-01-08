@@ -147,7 +147,7 @@ class SpikiViewProvider {
     </div>
 
     <script nonce="${nonce}">
-        const imageBase = "${getImageUri('')}";
+        const imageBase = "${getImageUri('').toString()}/";
     </script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

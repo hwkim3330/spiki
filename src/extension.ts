@@ -141,23 +141,12 @@ function getRandomSpikiImage(): vscode.Uri {
     return vscode.Uri.joinPath(extensionContext.extensionUri, 'media', 'images', `spiki${imageIndex}.png`);
 }
 
-function createSpikiDecoration(imageUri: vscode.Uri, isGutter: boolean = false): vscode.TextEditorDecorationType {
-    if (isGutter) {
-        return vscode.window.createTextEditorDecorationType({
-            gutterIconPath: imageUri,
-            gutterIconSize: 'contain',
-        });
-    } else {
-        // 인라인 데코레이션 (코드 뒤에 나타남)
-        return vscode.window.createTextEditorDecorationType({
-            after: {
-                contentIconPath: imageUri,
-                margin: '0 0 0 20px',
-                width: '24px',
-                height: '24px',
-            }
-        });
-    }
+function createSpikiDecoration(imageUri: vscode.Uri): vscode.TextEditorDecorationType {
+    // gutter에만 표시 (코드에는 안 나옴)
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: imageUri,
+        gutterIconSize: 'contain',
+    });
 }
 
 function addEditorSpiki() {
@@ -176,9 +165,7 @@ function addEditorSpiki() {
     const imageIndex = Math.floor(Math.random() * 15) + 1;
     const imageUri = vscode.Uri.joinPath(extensionContext.extensionUri, 'media', 'images', `spiki${imageIndex}.png`);
 
-    // gutter 또는 inline 랜덤 선택
-    const isGutter = Math.random() < 0.3;
-    const decoration = createSpikiDecoration(imageUri, isGutter);
+    const decoration = createSpikiDecoration(imageUri);
 
     const spiki: EditorSpiki = {
         id: 'spiki_' + Date.now() + '_' + Math.random(),
@@ -214,8 +201,7 @@ function moveEditorSpiki(spiki: EditorSpiki) {
 
     // 기존 데코레이션 제거하고 새로 생성
     spiki.decoration.dispose();
-    const isGutter = Math.random() < 0.3;
-    spiki.decoration = createSpikiDecoration(imageUri, isGutter);
+    spiki.decoration = createSpikiDecoration(imageUri);
 
     updateEditorSpiki(spiki, editor);
 }
