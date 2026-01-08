@@ -89,13 +89,15 @@ class SpikiViewProvider {
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'style.css'));
         // 이미지 URI 생성
         const getImageUri = (name) => webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'images', name));
+        // 오디오 URI 생성
+        const getAudioUri = (name) => webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'audio', name));
         const nonce = getNonce();
         return `<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}'; media-src ${webview.cspSource};">
     <link href="${styleUri}" rel="stylesheet">
     <title>Spiki</title>
 </head>
@@ -148,6 +150,7 @@ class SpikiViewProvider {
 
     <script nonce="${nonce}">
         const imageBase = "${getImageUri('').toString()}/";
+        const audioBase = "${getAudioUri('').toString()}/";
     </script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

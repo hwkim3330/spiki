@@ -33,6 +33,45 @@
 
     const NAMES = ['스피키', '피키', '스삐', '키키', '삐삐', '코코', '모모', '뽀뽀', '두두', '루루'];
 
+    // 오디오
+    const SOUNDS = {
+        happy: null,
+        tap: null,
+        spiki: null,
+        sad: null,
+        surprise: null,
+    };
+
+    let soundEnabled = true;
+
+    function initAudio() {
+        try {
+            SOUNDS.happy = new Audio(`${audioBase}happy.wav`);
+            SOUNDS.tap = new Audio(`${audioBase}tap.wav`);
+            SOUNDS.spiki = new Audio(`${audioBase}spiki.wav`);
+            SOUNDS.sad = new Audio(`${audioBase}sad.wav`);
+            SOUNDS.surprise = new Audio(`${audioBase}surprise.wav`);
+
+            // 볼륨 설정
+            Object.values(SOUNDS).forEach(sound => {
+                if (sound) sound.volume = 0.5;
+            });
+        } catch (e) {
+            console.log('Audio init failed:', e);
+        }
+    }
+
+    function playSound(name) {
+        if (!soundEnabled) return;
+        try {
+            const sound = SOUNDS[name];
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(() => {});
+            }
+        } catch (e) {}
+    }
+
     // 상태
     let state = {
         stats: { happiness: 100, hunger: 100, energy: 100 },
@@ -213,6 +252,7 @@
 
             this.bounce();
             this.setExpression('happy');
+            playSound('tap');
 
             if (this.isMain) {
                 showSpeech(pick(SPEECH.tap));
@@ -276,6 +316,9 @@
 
     // 초기화
     function init() {
+        // 오디오 초기화
+        initAudio();
+
         // 기존 character div 제거
         const oldChar = document.getElementById('character');
         if (oldChar) oldChar.remove();
@@ -294,6 +337,7 @@
         setTimeout(() => {
             showSpeech(pick(['안녕하세요!', '코딩하러 왔어요~', '함께 해요!']));
             mainSpiki.setExpression('happy');
+            playSound('spiki');
         }, 500);
     }
 
@@ -334,6 +378,7 @@
         main?.setExpression('happy');
         main?.jump();
         spawnEffects(['✨', '🌟', '💫'], 5);
+        playSound('spiki');
         addExp(30);
 
         updateSpikiCount();
@@ -364,6 +409,7 @@
         main?.bounce();
         showSpeech(pick(SPEECH.feed));
         spawnEffects(['🍰', '🍩', '🍪'], 4);
+        playSound('happy');
 
         // 모든 스피키에게 먹이 효과
         spikis.forEach(s => {
@@ -399,6 +445,7 @@
         main?.jump();
         showSpeech(pick(SPEECH.play));
         spawnEffects(['⭐', '🌟', '✨'], 6);
+        playSound('happy');
 
         // 모든 스피키가 뛰어다님
         spikis.forEach(s => {
@@ -427,6 +474,7 @@
         main?.setExpression('happy');
         main?.wiggle();
         showSpeech(pick(SPEECH.pet));
+        playSound('happy');
         spawnEffects(['💕', '💗'], 5);
 
         // 미니 스피키들이 메인에게 모임
@@ -636,6 +684,7 @@
         main?.jump();
         showSpeech('레벨 업! 🎉');
         spawnEffects(['🎉', '⭐', '🌟'], 8);
+        playSound('spiki');
 
         // 레벨업하면 자동으로 증식!
         setTimeout(() => {
