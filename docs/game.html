@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
+    <title>스피키 다마고치 - Spiki Tamagotchi</title>
+    <link rel="stylesheet" href="game.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="game-header">
+            <h1>🐾 스피키 다마고치</h1>
+            <div class="header-info">
+                <div class="level-badge">Lv. <span id="level">1</span></div>
+                <div class="spiki-count">스피키 × <span id="spiki-count">1</span></div>
+            </div>
+        </header>
+
+        <!-- 스탯 -->
+        <section class="stats">
+            <div class="stat">
+                <span class="stat-label">💖 행복</span>
+                <div class="stat-bar">
+                    <div class="stat-fill happiness" id="happiness-bar" style="width: 100%"></div>
+                </div>
+                <span class="stat-value" id="happiness-value">100</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">🍰 포만</span>
+                <div class="stat-bar">
+                    <div class="stat-fill hunger" id="hunger-bar" style="width: 100%"></div>
+                </div>
+                <span class="stat-value" id="hunger-value">100</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">⚡ 에너지</span>
+                <div class="stat-bar">
+                    <div class="stat-fill energy" id="energy-bar" style="width: 100%"></div>
+                </div>
+                <span class="stat-value" id="energy-value">100</span>
+            </div>
+
+            <!-- 경험치 바 -->
+            <div class="stat exp-stat">
+                <span class="stat-label">✨ EXP</span>
+                <div class="stat-bar">
+                    <div class="stat-fill exp" id="exp-bar" style="width: 0%"></div>
+                </div>
+                <span class="stat-value exp-text"><span id="exp">0</span>/<span id="exp-max">100</span></span>
+            </div>
+        </section>
+
+        <!-- 캐릭터 영역 -->
+        <section class="character-area" id="character-area">
+            <div class="speech-bubble" id="speech">
+                <span id="speech-text">안녕하세요!</span>
+            </div>
+            <div class="effects" id="effects"></div>
+        </section>
+
+        <!-- 액션 버튼 -->
+        <section class="actions">
+            <button class="action-btn" id="feed-btn" title="밥주기">🍰</button>
+            <button class="action-btn" id="play-btn" title="놀아주기">⭐</button>
+            <button class="action-btn" id="pet-btn" title="쓰다듬기">💕</button>
+            <button class="action-btn" id="sleep-btn" title="재우기">💤</button>
+            <button class="action-btn multiply-btn" id="multiply-btn" title="증식">🌟</button>
+            <button class="action-btn music-btn" id="music-btn" title="음악">🎵</button>
+        </section>
+
+        <!-- YouTube 패널 -->
+        <div class="youtube-panel" id="youtube-panel">
+            <div class="youtube-header">
+                <span>🎵 음악 재생</span>
+                <button class="close-btn" id="close-youtube">✕</button>
+            </div>
+
+            <div class="youtube-presets">
+                <button class="preset-btn" data-video="jfKfPfyJRdk">로파이</button>
+                <button class="preset-btn" data-video="5qap5aO4i9A">재즈</button>
+                <button class="preset-btn" data-video="DWcJFNfaw9c">클래식</button>
+            </div>
+
+            <div class="youtube-input">
+                <input type="text" id="youtube-url" placeholder="YouTube URL 또는 Shorts 링크">
+                <button id="play-youtube">재생</button>
+            </div>
+
+            <div class="youtube-player" id="youtube-container"></div>
+        </div>
+
+        <!-- 팁 -->
+        <div class="coding-tip" id="coding-tip">
+            스피키를 잡고 위로 끌어당겨보세요!
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
