@@ -443,6 +443,9 @@
         document.getElementById('close-youtube')?.addEventListener('click', closeYouTubePanel);
         document.getElementById('play-youtube')?.addEventListener('click', playYouTubeFromInput);
 
+        // 오디오 테스트 버튼
+        document.getElementById('audio-test-btn')?.addEventListener('click', testAudio);
+
         document.querySelectorAll('.preset-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const videoId = btn.dataset.video;
@@ -451,6 +454,37 @@
                 btn.classList.add('active');
             });
         });
+    }
+
+    function testAudio() {
+        const status = document.getElementById('audio-status');
+        status.textContent = '테스트 중...';
+
+        unlockAudio();
+
+        // 모든 오디오 파일 확인
+        let loaded = 0;
+        let failed = 0;
+
+        SOUND_FILES.forEach(name => {
+            const sound = SOUNDS[name];
+            if (sound && sound.readyState >= 2) {
+                loaded++;
+            } else {
+                failed++;
+                console.log(`Failed to load: ${name}.wav`);
+            }
+        });
+
+        status.textContent = `로드됨: ${loaded}/${SOUND_FILES.length}, 실패: ${failed}`;
+
+        // 테스트 사운드 재생
+        setTimeout(() => {
+            playSound('happy');
+            setTimeout(() => {
+                status.textContent += ' | 재생 시도 완료';
+            }, 500);
+        }, 100);
     }
 
     // YouTube 기능
