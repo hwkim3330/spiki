@@ -308,10 +308,6 @@
     // 증식!
     function multiply() {
         if (state.sleeping || state.animating) return;
-        if (spikis.length >= 10) {
-            showSpeech('너무 많아요! 😅');
-            return;
-        }
 
         // 에너지와 포만감 소모
         if (state.stats.energy < 30 || state.stats.hunger < 30) {
@@ -642,16 +638,14 @@
         spawnEffects(['🎉', '⭐', '🌟'], 8);
 
         // 레벨업하면 자동으로 증식!
-        if (spikis.length < 10) {
-            setTimeout(() => {
-                const newSpiki = new Spiki('spiki_' + Date.now(), false);
-                newSpiki.x = (main?.x || 50) + (Math.random() - 0.5) * 30;
-                newSpiki.y = (main?.y || 50) + (Math.random() - 0.5) * 20;
-                spikis.push(newSpiki);
-                showSpeech('새 친구가 왔어요!');
-                updateSpikiCount();
-            }, 1000);
-        }
+        setTimeout(() => {
+            const newSpiki = new Spiki('spiki_' + Date.now(), false);
+            newSpiki.x = (main?.x || 50) + (Math.random() - 0.5) * 30;
+            newSpiki.y = (main?.y || 50) + (Math.random() - 0.5) * 20;
+            spikis.push(newSpiki);
+            showSpeech('새 친구가 왔어요!');
+            updateSpikiCount();
+        }, 1000);
 
         // 알림
         vscode.postMessage({

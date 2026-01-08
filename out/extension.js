@@ -41,13 +41,13 @@ let spikiProvider;
 let statusBarItem;
 let typingTimer;
 let saveCount = 0;
-// 에디터 데코레이션 (스피키가 에디터에서 돌아다님)
-let editorSpikiDecoration;
-let editorSpikiPosition = { line: 0, character: 0 };
+let editorSpikis = [];
 let editorSpikiTimer;
 let editorSpikiEnabled = true;
+let extensionContext;
 function activate(context) {
     console.log('Spiki is waking up! 🐾');
+    extensionContext = context;
     // Webview Provider 등록
     spikiProvider = new SpikiViewProvider_1.SpikiViewProvider(context.extensionUri, context);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('spiki.panel', spikiProvider));
@@ -57,8 +57,6 @@ function activate(context) {
     updateStatusBar();
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
-    // 에디터 스피키 데코레이션 생성
-    createEditorSpikiDecoration(context);
     // 명령어 등록
     context.subscriptions.push(vscode.commands.registerCommand('spiki.show', () => {
         vscode.commands.executeCommand('spiki.panel.focus');
@@ -71,12 +69,17 @@ function activate(context) {
     }), vscode.commands.registerCommand('spiki.toggleEditorSpiki', () => {
         editorSpikiEnabled = !editorSpikiEnabled;
         if (editorSpikiEnabled) {
-            startEditorSpiki();
+            startEditorSpikis();
             vscode.window.showInformationMessage('🐾 스피키가 에디터에 나타났어요!');
         }
         else {
-            stopEditorSpiki();
+            stopEditorSpikis();
             vscode.window.showInformationMessage('🐾 스피키가 에디터에서 숨었어요!');
+        }
+    }), vscode.commands.registerCommand('spiki.addEditorSpiki', () => {
+        if (editorSpikiEnabled) {
+            addEditorSpiki();
+            vscode.window.showInformationMessage('🐾 에디터에 스피키 추가!');
         }
     }));
     // 코딩 활동 감지
@@ -85,9 +88,9 @@ function activate(context) {
     vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.contentChanges.length > 0 && config.get('autoFeed')) {
             handleTyping();
-            // 타이핑하면 스피키가 반응
-            if (editorSpikiEnabled && Math.random() < 0.1) {
-                moveEditorSpiki();
+            // 타이핑하면 스피키들 반응
+            if (editorSpikiEnabled && Math.random() < 0.15) {
+                moveAllEditorSpikis();
             }
         }
     });
@@ -98,12 +101,20 @@ function activate(context) {
             if (saveCount >= 3) {
                 spikiProvider.sendMessage({ type: 'reward', reason: 'save', amount: 5 });
                 saveCount = 0;
+                // 저장하면 스피키 추가 확률
+                if (editorSpikiEnabled && Math.random() < 0.2) {
+                    addEditorSpiki();
+                }
             }
         }
     });
     // 디버그 시작 감지
     vscode.debug.onDidStartDebugSession(() => {
         spikiProvider.sendMessage({ type: 'reward', reason: 'debug', amount: 10 });
+        // 디버그하면 스피키들 놀람
+        if (editorSpikiEnabled) {
+            moveAllEditorSpikis();
+        }
     });
     // 터미널 명령 실행 감지
     vscode.window.onDidOpenTerminal(() => {
@@ -112,54 +123,46 @@ function activate(context) {
     // 에디터 변경 감지
     vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (editor && editorSpikiEnabled) {
-            updateEditorSpiki(editor);
+            updateAllEditorSpikis();
         }
     });
     // 스피키 상태 업데이트 수신
     spikiProvider.onStateUpdate((state) => {
         updateStatusBar(state);
     });
-    // 30분마다 스탯 감소
+    // 30초마다 스탯 감소
     setInterval(() => {
         spikiProvider.sendMessage({ type: 'tick' });
     }, 30000);
     // 에디터 스피키 시작
     if (editorSpikiEnabled) {
-        startEditorSpiki();
+        startEditorSpikis();
     }
 }
-function createEditorSpikiDecoration(context) {
-    const spikiImages = [];
-    for (let i = 1; i <= 15; i++) {
-        spikiImages.push(vscode.Uri.joinPath(context.extensionUri, 'media', 'images', `spiki${i}.png`));
-    }
-    // 현재 스피키 이미지 (랜덤)
-    const currentImage = spikiImages[Math.floor(Math.random() * spikiImages.length)];
-    editorSpikiDecoration = vscode.window.createTextEditorDecorationType({
-        gutterIconPath: currentImage,
-        gutterIconSize: '80%',
-    });
+function getRandomSpikiImage() {
+    const imageIndex = Math.floor(Math.random() * 15) + 1;
+    return vscode.Uri.joinPath(extensionContext.extensionUri, 'media', 'images', `spiki${imageIndex}.png`);
 }
-function startEditorSpiki() {
-    // 주기적으로 스피키 이동
-    editorSpikiTimer = setInterval(() => {
-        moveEditorSpiki();
-    }, 5000 + Math.random() * 5000);
-    // 초기 위치 설정
-    moveEditorSpiki();
-}
-function stopEditorSpiki() {
-    if (editorSpikiTimer) {
-        clearInterval(editorSpikiTimer);
-        editorSpikiTimer = undefined;
+function createSpikiDecoration(imageUri, isGutter = false) {
+    if (isGutter) {
+        return vscode.window.createTextEditorDecorationType({
+            gutterIconPath: imageUri,
+            gutterIconSize: 'contain',
+        });
     }
-    // 데코레이션 제거
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-        editor.setDecorations(editorSpikiDecoration, []);
+    else {
+        // 인라인 데코레이션 (코드 뒤에 나타남)
+        return vscode.window.createTextEditorDecorationType({
+            after: {
+                contentIconPath: imageUri,
+                margin: '0 0 0 20px',
+                width: '24px',
+                height: '24px',
+            }
+        });
     }
 }
-function moveEditorSpiki() {
+function addEditorSpiki() {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
@@ -167,21 +170,102 @@ function moveEditorSpiki() {
     const lineCount = document.lineCount;
     if (lineCount === 0)
         return;
-    // 랜덤 위치로 이동
-    const newLine = Math.floor(Math.random() * Math.min(lineCount, 50));
-    editorSpikiPosition.line = newLine;
-    updateEditorSpiki(editor);
+    // 랜덤 위치
+    const line = Math.floor(Math.random() * Math.min(lineCount, 100));
+    const lineText = document.lineAt(line).text;
+    const character = Math.min(lineText.length, Math.floor(Math.random() * 50));
+    const imageIndex = Math.floor(Math.random() * 15) + 1;
+    const imageUri = vscode.Uri.joinPath(extensionContext.extensionUri, 'media', 'images', `spiki${imageIndex}.png`);
+    // gutter 또는 inline 랜덤 선택
+    const isGutter = Math.random() < 0.3;
+    const decoration = createSpikiDecoration(imageUri, isGutter);
+    const spiki = {
+        id: 'spiki_' + Date.now() + '_' + Math.random(),
+        line,
+        character,
+        imageIndex,
+        decoration,
+    };
+    editorSpikis.push(spiki);
+    updateEditorSpiki(spiki, editor);
 }
-function updateEditorSpiki(editor) {
-    if (!editorSpikiEnabled)
+function moveEditorSpiki(spiki) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor)
         return;
+    const document = editor.document;
+    const lineCount = document.lineCount;
+    if (lineCount === 0)
+        return;
+    // 새 위치로 이동 (점프하듯이)
+    const newLine = Math.floor(Math.random() * Math.min(lineCount, 100));
+    const lineText = document.lineAt(newLine).text;
+    const newChar = Math.min(lineText.length, Math.floor(Math.random() * 50));
+    spiki.line = newLine;
+    spiki.character = newChar;
+    // 표정 변경
+    spiki.imageIndex = Math.floor(Math.random() * 15) + 1;
+    const imageUri = vscode.Uri.joinPath(extensionContext.extensionUri, 'media', 'images', `spiki${spiki.imageIndex}.png`);
+    // 기존 데코레이션 제거하고 새로 생성
+    spiki.decoration.dispose();
+    const isGutter = Math.random() < 0.3;
+    spiki.decoration = createSpikiDecoration(imageUri, isGutter);
+    updateEditorSpiki(spiki, editor);
+}
+function updateEditorSpiki(spiki, editor) {
     const lineCount = editor.document.lineCount;
     if (lineCount === 0)
         return;
-    // 범위 체크
-    const line = Math.min(editorSpikiPosition.line, lineCount - 1);
-    const range = new vscode.Range(new vscode.Position(line, 0), new vscode.Position(line, 0));
-    editor.setDecorations(editorSpikiDecoration, [{ range }]);
+    const line = Math.min(spiki.line, lineCount - 1);
+    const lineText = editor.document.lineAt(line).text;
+    const char = Math.min(spiki.character, lineText.length);
+    const range = new vscode.Range(new vscode.Position(line, char), new vscode.Position(line, char));
+    editor.setDecorations(spiki.decoration, [{ range }]);
+}
+function updateAllEditorSpikis() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return;
+    editorSpikis.forEach(spiki => {
+        updateEditorSpiki(spiki, editor);
+    });
+}
+function moveAllEditorSpikis() {
+    editorSpikis.forEach(spiki => {
+        if (Math.random() < 0.5) {
+            moveEditorSpiki(spiki);
+        }
+    });
+}
+function startEditorSpikis() {
+    // 초기 스피키 몇 마리 추가
+    for (let i = 0; i < 3; i++) {
+        setTimeout(() => addEditorSpiki(), i * 500);
+    }
+    // 주기적으로 이동
+    editorSpikiTimer = setInterval(() => {
+        // 랜덤하게 이동
+        editorSpikis.forEach(spiki => {
+            if (Math.random() < 0.3) {
+                moveEditorSpiki(spiki);
+            }
+        });
+        // 가끔 새 스피키 추가 (최대 20마리)
+        if (editorSpikis.length < 20 && Math.random() < 0.1) {
+            addEditorSpiki();
+        }
+    }, 3000 + Math.random() * 2000);
+}
+function stopEditorSpikis() {
+    if (editorSpikiTimer) {
+        clearInterval(editorSpikiTimer);
+        editorSpikiTimer = undefined;
+    }
+    // 모든 데코레이션 제거
+    editorSpikis.forEach(spiki => {
+        spiki.decoration.dispose();
+    });
+    editorSpikis = [];
 }
 function handleTyping() {
     if (typingTimer) {
@@ -202,15 +286,15 @@ function updateStatusBar(state) {
         emoji = '😐';
     else if (happiness > 80)
         emoji = '😄';
-    statusBarItem.text = `$(heart) Spiki ${emoji} Lv.${level}${count > 1 ? ` x${count}` : ''}`;
+    const editorCount = editorSpikis.length;
+    const totalCount = count + editorCount;
+    statusBarItem.text = `$(heart) Spiki ${emoji} Lv.${level} x${totalCount}`;
     statusBarItem.tooltip = state
-        ? `행복: ${Math.round(happiness)}% | 포만감: ${Math.round(state.hunger)}% | 에너지: ${Math.round(state.energy)}%\n스피키: ${count}마리`
+        ? `행복: ${Math.round(happiness)}% | 포만감: ${Math.round(state.hunger)}% | 에너지: ${Math.round(state.energy)}%\n패널: ${count}마리 | 에디터: ${editorCount}마리`
         : 'Click to see Spiki!';
 }
 function deactivate() {
-    if (editorSpikiTimer) {
-        clearInterval(editorSpikiTimer);
-    }
+    stopEditorSpikis();
     console.log('Spiki is sleeping... 💤');
 }
 //# sourceMappingURL=extension.js.map

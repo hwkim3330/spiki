@@ -44,6 +44,10 @@
       {
         "command": "spiki.toggleEditorSpiki",
         "title": "Spiki: Toggle Editor Spiki"
+      },
+      {
+        "command": "spiki.addEditorSpiki",
+        "title": "Spiki: Add Spiki to Editor"
       }
     ],
     "viewsContainers": {
