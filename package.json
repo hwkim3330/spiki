@@ -1,23 +1,37 @@
 {
   "name": "spiki-tamagotchi",
   "displayName": "Spiki Tamagotchi",
-  "description": "귀여운 스피키와 함께 코딩하세요! 코딩할수록 스피키가 행복해져요 🐾",
-  "version": "1.0.0",
-  "publisher": "hwkim3330",
+  "description": "귀여운 스피키와 함께 코딩하세요! 코딩할수록 스피키가 행복해져요. Cute coding companion that grows with you!",
+  "version": "1.1.0",
+  "publisher": "kimhyunwoo",
+  "author": {
+    "name": "Kim Hyunwoo"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
   "keywords": [
     "tamagotchi",
     "pet",
     "productivity",
     "fun",
-    "companion"
+    "companion",
+    "coding",
+    "virtual pet",
+    "gamification",
+    "spiki",
+    "cute"
   ],
   "icon": "media/images/spiki1.png",
+  "galleryBanner": {
+    "color": "#1a1a2e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -31,23 +45,28 @@
       },
       {
         "command": "spiki.feed",
-        "title": "Spiki: Feed Spiki"
+        "title": "Spiki: Feed Spiki",
+        "icon": "$(feedback)"
       },
       {
         "command": "spiki.play",
-        "title": "Spiki: Play with Spiki"
+        "title": "Spiki: Play with Spiki",
+        "icon": "$(sparkle)"
       },
       {
         "command": "spiki.pet",
-        "title": "Spiki: Pet Spiki"
+        "title": "Spiki: Pet Spiki",
+        "icon": "$(heart-filled)"
       },
       {
         "command": "spiki.toggleEditorSpiki",
-        "title": "Spiki: Toggle Editor Spiki"
+        "title": "Spiki: Toggle Editor Spiki",
+        "icon": "$(eye)"
       },
       {
         "command": "spiki.addEditorSpiki",
-        "title": "Spiki: Add Spiki to Editor"
+        "title": "Spiki: Add Spiki to Editor",
+        "icon": "$(add)"
       }
     ],
     "viewsContainers": {
@@ -85,6 +104,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically reward Spiki for coding activity"
+        },
+        "spiki.editorSpiki": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Spiki in the editor gutter"
         }
       }
     }
@@ -103,6 +127,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hwkim3330/spiki-vscode"
-  }
+    "url": "https://github.com/kimhyunwoo/spiki"
+  },
+  "bugs": {
+    "url": "https://github.com/kimhyunwoo/spiki/issues"
+  },
+  "homepage": "https://github.com/kimhyunwoo/spiki#readme"
 }
