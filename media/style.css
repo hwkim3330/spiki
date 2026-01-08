@@ -314,6 +314,17 @@ body {
     transition: none !important;
 }
 
+.spiki-creature.dancing img {
+    animation: dance 0.5s ease-in-out infinite;
+}
+
+@keyframes dance {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(-5deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-8px) rotate(5deg); }
+}
+
 /* Effects */
 .effects {
     position: absolute;
@@ -379,6 +390,141 @@ body {
 
 .action-btn.multiply-btn:hover {
     background: linear-gradient(135deg, #9775fa, #cc5de8);
+}
+
+.action-btn.music-btn {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+}
+
+.action-btn.music-btn:hover {
+    background: linear-gradient(135deg, #ff8787, #fa6b6b);
+}
+
+.action-btn.music-btn.playing {
+    animation: pulse-music 1s ease-in-out infinite;
+}
+
+@keyframes pulse-music {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* YouTube Panel */
+.youtube-panel {
+    display: none;
+    position: absolute;
+    bottom: 60px;
+    left: 10px;
+    right: 10px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 12px;
+    padding: 10px;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.youtube-panel.show {
+    display: block;
+}
+
+.youtube-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--vscode-editor-foreground);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.youtube-presets {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.preset-btn {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.preset-btn.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+}
+
+.youtube-input {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.youtube-input input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 6px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    font-size: 11px;
+}
+
+.youtube-input input:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder);
+}
+
+.youtube-input button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.youtube-input button:hover {
+    background: linear-gradient(135deg, #ff8787, #fa6b6b);
+}
+
+.youtube-player {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+}
+
+.youtube-player iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 /* Coding Tip */

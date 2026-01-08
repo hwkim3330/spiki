@@ -84,7 +84,7 @@ export class SpikiViewProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}'; media-src ${webview.cspSource};">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}' https://www.youtube.com; media-src ${webview.cspSource}; frame-src https://www.youtube.com https://www.youtube-nocookie.com;">
     <link href="${styleUri}" rel="stylesheet">
     <title>Spiki</title>
 </head>
@@ -128,6 +128,24 @@ export class SpikiViewProvider implements vscode.WebviewViewProvider {
             <button class="action-btn" id="pet-btn" title="쓰다듬기">💕</button>
             <button class="action-btn" id="sleep-btn" title="재우기">💤</button>
             <button class="action-btn multiply-btn" id="multiply-btn" title="증식!">🥚</button>
+            <button class="action-btn music-btn" id="music-btn" title="음악">🎵</button>
+        </div>
+
+        <div class="youtube-panel" id="youtube-panel">
+            <div class="youtube-header">
+                <span>Music</span>
+                <button class="close-btn" id="close-youtube">✕</button>
+            </div>
+            <div class="youtube-presets">
+                <button class="preset-btn" data-video="jfKfPfyJRdk">Lofi</button>
+                <button class="preset-btn" data-video="5qap5aO4i9A">Chill</button>
+                <button class="preset-btn" data-video="rUxyKA_-grg">Piano</button>
+            </div>
+            <div class="youtube-input">
+                <input type="text" id="youtube-url" placeholder="YouTube URL or ID">
+                <button id="play-youtube">▶</button>
+            </div>
+            <div class="youtube-player" id="youtube-container"></div>
         </div>
 
         <div class="coding-tip" id="coding-tip">

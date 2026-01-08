@@ -453,6 +453,87 @@
         document.getElementById('pet-btn')?.addEventListener('click', () => pet());
         document.getElementById('sleep-btn')?.addEventListener('click', () => toggleSleep());
         document.getElementById('multiply-btn')?.addEventListener('click', () => multiply());
+        document.getElementById('music-btn')?.addEventListener('click', () => toggleYouTubePanel());
+        document.getElementById('close-youtube')?.addEventListener('click', () => closeYouTubePanel());
+        document.getElementById('play-youtube')?.addEventListener('click', () => playYouTubeFromInput());
+
+        // 프리셋 버튼들
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const videoId = btn.dataset.video;
+                if (videoId) playYouTube(videoId);
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    }
+
+    // YouTube 기능
+    let youtubePlayer = null;
+    let isYoutubePlaying = false;
+
+    function toggleYouTubePanel() {
+        const panel = document.getElementById('youtube-panel');
+        panel?.classList.toggle('show');
+    }
+
+    function closeYouTubePanel() {
+        const panel = document.getElementById('youtube-panel');
+        panel?.classList.remove('show');
+    }
+
+    function playYouTubeFromInput() {
+        const input = document.getElementById('youtube-url');
+        if (!input) return;
+        const value = input.value.trim();
+        if (!value) return;
+
+        // URL에서 video ID 추출
+        let videoId = value;
+        if (value.includes('youtube.com') || value.includes('youtu.be')) {
+            const match = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+            if (match) videoId = match[1];
+        }
+        playYouTube(videoId);
+    }
+
+    function playYouTube(videoId) {
+        const container = document.getElementById('youtube-container');
+        if (!container) return;
+
+        // iframe 생성
+        container.innerHTML = `<iframe
+            src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&loop=1"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+        </iframe>`;
+
+        isYoutubePlaying = true;
+        document.getElementById('music-btn')?.classList.add('playing');
+
+        // 스피키 반응
+        const main = getMainSpiki();
+        main?.setExpression('happy');
+        showSpeech(pick(['음악이다!', '신나요~', '좋아요!']));
+        playRandomSound(['happy', 'happy2']);
+
+        // 춤추기 (모든 스피키)
+        spikis.forEach(s => {
+            if (!s.sleeping) {
+                s.element?.classList.add('dancing');
+            }
+        });
+    }
+
+    function stopYouTube() {
+        const container = document.getElementById('youtube-container');
+        if (container) container.innerHTML = '';
+        isYoutubePlaying = false;
+        document.getElementById('music-btn')?.classList.remove('playing');
+
+        spikis.forEach(s => {
+            s.element?.classList.remove('dancing');
+        });
     }
 
     // 증식!
