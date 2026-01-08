@@ -34,27 +34,15 @@
     const NAMES = ['스피키', '피키', '스삐', '키키', '삐삐', '코코', '모모', '뽀뽀', '두두', '루루'];
 
     // 오디오
-    const SOUNDS = {
-        happy: null,
-        tap: null,
-        spiki: null,
-        sad: null,
-        surprise: null,
-    };
-
+    const SOUNDS = {};
+    const SOUND_FILES = ['happy', 'happy2', 'tap', 'spiki', 'sad', 'surprise', 'dont', 'drag', 'play', 'tired'];
     let soundEnabled = true;
 
     function initAudio() {
         try {
-            SOUNDS.happy = new Audio(`${audioBase}happy.wav`);
-            SOUNDS.tap = new Audio(`${audioBase}tap.wav`);
-            SOUNDS.spiki = new Audio(`${audioBase}spiki.wav`);
-            SOUNDS.sad = new Audio(`${audioBase}sad.wav`);
-            SOUNDS.surprise = new Audio(`${audioBase}surprise.wav`);
-
-            // 볼륨 설정
-            Object.values(SOUNDS).forEach(sound => {
-                if (sound) sound.volume = 0.5;
+            SOUND_FILES.forEach(name => {
+                SOUNDS[name] = new Audio(`${audioBase}${name}.wav`);
+                SOUNDS[name].volume = 0.5;
             });
         } catch (e) {
             console.log('Audio init failed:', e);
@@ -70,6 +58,10 @@
                 sound.play().catch(() => {});
             }
         } catch (e) {}
+    }
+
+    function playRandomSound(names) {
+        playSound(pick(names));
     }
 
     // 상태
@@ -157,11 +149,20 @@
 
             this.element.appendChild(this.imgElement);
 
-            // 클릭 이벤트
-            this.element.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.onTap();
-            });
+            // 드래그 & 클릭 이벤트
+            this.dragging = false;
+            this.dragStart = { x: 0, y: 0 };
+            this.dragOffset = { x: 0, y: 0 };
+            this.lastTap = 0;
+
+            this.element.addEventListener('mousedown', (e) => this.onDragStart(e));
+            this.element.addEventListener('touchstart', (e) => this.onDragStart(e), { passive: false });
+
+            document.addEventListener('mousemove', (e) => this.onDragMove(e));
+            document.addEventListener('touchmove', (e) => this.onDragMove(e), { passive: false });
+
+            document.addEventListener('mouseup', (e) => this.onDragEnd(e));
+            document.addEventListener('touchend', (e) => this.onDragEnd(e));
 
             characterArea?.appendChild(this.element);
 
@@ -264,6 +265,106 @@
                     this.targetY = mainSpiki.y + (Math.random() - 0.5) * 10;
                 }
                 showSpeechAt(pick(['안녕!', '헤헤~', '놀자!']), this.x, this.y - 15);
+            }
+        }
+
+        onDragStart(e) {
+            if (this.sleeping) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const rect = characterArea?.getBoundingClientRect();
+            if (!rect) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            this.dragging = true;
+            this.dragStart = { x: clientX, y: clientY };
+            this.dragOffset = {
+                x: this.x - ((clientX - rect.left) / rect.width * 100),
+                y: this.y - ((clientY - rect.top) / rect.height * 100)
+            };
+
+            this.element?.classList.add('dragging');
+            this.setExpression('surprised');
+        }
+
+        onDragMove(e) {
+            if (!this.dragging) return;
+            e.preventDefault();
+
+            const rect = characterArea?.getBoundingClientRect();
+            if (!rect) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // 새 위치 계산
+            let newX = ((clientX - rect.left) / rect.width * 100) + this.dragOffset.x;
+            let newY = ((clientY - rect.top) / rect.height * 100) + this.dragOffset.y;
+
+            // 범위 제한
+            newX = Math.max(10, Math.min(90, newX));
+            newY = Math.max(20, Math.min(80, newY));
+
+            this.x = newX;
+            this.y = newY;
+            this.targetX = newX;
+            this.targetY = newY;
+
+            // 늘어나는 효과 (위로 당기면 늘어남)
+            const dragDist = this.dragStart.y - clientY;
+            const stretch = Math.min(1.3, 1 + Math.abs(dragDist) / 300);
+
+            this.element.style.left = this.x + '%';
+            this.element.style.top = this.y + '%';
+            this.element.style.transform = `translate(-50%, -50%) scale(${this.size}) scaleY(${stretch})`;
+
+            // 많이 당기면 소리
+            if (Math.abs(dragDist) > 50 && Math.random() < 0.02) {
+                playRandomSound(['drag', 'dont']);
+                this.setExpression('worried');
+                showSpeech(pick(['아야!', '놔주세요~', '머리 잡아 당기지 마세요!']));
+            }
+        }
+
+        onDragEnd(e) {
+            if (!this.dragging) return;
+
+            const wasDragging = this.dragging;
+            this.dragging = false;
+            this.element?.classList.remove('dragging');
+
+            // 원래 비율로 복구
+            this.element.style.transform = `translate(-50%, -50%) scale(${this.size})`;
+
+            // 짧은 클릭이면 탭으로 처리
+            const now = Date.now();
+            if (now - this.lastTap < 300) {
+                return;
+            }
+            this.lastTap = now;
+
+            const rect = characterArea?.getBoundingClientRect();
+            if (!rect) return;
+
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const dragDist = this.dragStart.y - clientY;
+
+            if (Math.abs(dragDist) < 10) {
+                // 거의 안 움직였으면 탭
+                this.onTap();
+            } else if (dragDist > 30) {
+                // 위로 많이 당겼다 놓으면 점프
+                this.jump();
+                this.setExpression('happy');
+                playRandomSound(['happy', 'happy2']);
+                showSpeech(pick(['우와~!', '신나요!', '높이 날았어요!']));
+            } else {
+                // 그냥 놓으면 원래대로
+                this.setExpression('idle');
+                this.bounce();
             }
         }
 
@@ -409,7 +510,7 @@
         main?.bounce();
         showSpeech(pick(SPEECH.feed));
         spawnEffects(['🍰', '🍩', '🍪'], 4);
-        playSound('happy');
+        playRandomSound(['happy', 'happy2']);
 
         // 모든 스피키에게 먹이 효과
         spikis.forEach(s => {
@@ -445,7 +546,7 @@
         main?.jump();
         showSpeech(pick(SPEECH.play));
         spawnEffects(['⭐', '🌟', '✨'], 6);
-        playSound('happy');
+        playRandomSound(['play', 'happy', 'happy2']);
 
         // 모든 스피키가 뛰어다님
         spikis.forEach(s => {
@@ -474,7 +575,7 @@
         main?.setExpression('happy');
         main?.wiggle();
         showSpeech(pick(SPEECH.pet));
-        playSound('happy');
+        playRandomSound(['happy', 'happy2']);
         spawnEffects(['💕', '💗'], 5);
 
         // 미니 스피키들이 메인에게 모임

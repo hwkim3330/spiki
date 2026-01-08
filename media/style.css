@@ -303,6 +303,16 @@ body {
     50% { transform: translateY(3px) rotate(3deg); }
 }
 
+.spiki-creature.dragging {
+    cursor: grabbing !important;
+    z-index: 100 !important;
+}
+
+.spiki-creature.dragging img {
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+    transition: none !important;
+}
+
 /* Effects */
 .effects {
     position: absolute;
