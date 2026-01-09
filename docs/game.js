@@ -25,45 +25,131 @@
 
     const NAMES = ['스피키', '피키', '스삐', '키키', '삐삐', '코코', '모모', '뽀뽀', '두두', '루루'];
 
-    // 오디오
+    // Web Audio API로 개선된 오디오 시스템
     const SOUNDS = {};
-    const SOUND_FILES = ['happy', 'happy2', 'tap', 'spiki', 'sad', 'surprise', 'dont', 'drag', 'play', 'tired'];
+    const SOUND_FILES = [
+        'happy',      // 좋아요!
+        'happy2',     // 좋아요 좋아요
+        'tap',        // 에
+        'spiki',      // 스피키
+        'sad',        // 으앙
+        'surprise',   // 으앙 (duplicate, will keep)
+        'dont',       // 네르지 마세요
+        'drag',       // 머리 잡아 당기지 마세요
+        'play',       // 숨바꼭질 좋아요
+        'tired',      // 열심히 했는데
+        'mop',        // 물걸레질
+        'pumpkin',    // 호박이 좋아요
+        'hideseek',   // 숨바꼭질 좋아요 (longer version)
+        'worked',     // 열심히 했는데 (longer version)
+        'cry'         // 으앙 (crying)
+    ];
     let soundEnabled = true;
     let audioUnlocked = false;
+    let audioContext = null;
+    let audioBuffers = {};
 
-    function initAudio() {
+    async function initAudio() {
         try {
+            // Web Audio API 초기화
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('AudioContext created:', audioContext.state);
+
+            // 현재 경로 확인 (GitHub Pages 대응)
+            const basePath = window.location.pathname.includes('/game.html')
+                ? window.location.pathname.replace('/game.html', '/')
+                : window.location.pathname.endsWith('/')
+                    ? window.location.pathname
+                    : window.location.pathname + '/';
+
+            console.log('Base path for audio:', basePath);
+
+            // HTML Audio 요소도 생성 (fallback용)
             SOUND_FILES.forEach(name => {
-                SOUNDS[name] = new Audio(`${name}.wav`);
-                SOUNDS[name].volume = 0.3;
-                SOUNDS[name].preload = 'auto';
+                const audioPath = `${name}.wav`;
+                const audio = new Audio(audioPath);
+                audio.volume = 0.4;
+                audio.preload = 'auto';
+                audio.crossOrigin = 'anonymous'; // CORS 대응
+                SOUNDS[name] = audio;
+
+                // 로드 성공 확인
+                audio.addEventListener('canplaythrough', () => {
+                    console.log(`✓ Audio ready: ${name}.wav`);
+                }, { once: true });
+
+                audio.addEventListener('error', (e) => {
+                    console.error(`✗ Audio failed: ${name}.wav`, e);
+                }, { once: true });
+
+                // Web Audio API용 버퍼 로드 시도
+                fetch(audioPath, { mode: 'cors' })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.arrayBuffer();
+                    })
+                    .then(buffer => audioContext.decodeAudioData(buffer))
+                    .then(decoded => {
+                        audioBuffers[name] = decoded;
+                        console.log(`✓ Web Audio loaded: ${name}.wav`);
+                    })
+                    .catch(e => console.log(`✗ Web Audio failed: ${name}.wav -`, e.message));
             });
+
+            console.log(`Initialized ${SOUND_FILES.length} audio files`);
         } catch (e) {
-            console.log('Audio init failed:', e);
+            console.error('Audio init failed:', e);
         }
     }
 
     function unlockAudio() {
         if (audioUnlocked) return;
-        // 첫 클릭 시 오디오 컨텍스트 활성화
+
+        // Web Audio Context 재개
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
+        // HTML Audio 활성화
         Object.values(SOUNDS).forEach(sound => {
             sound.play().then(() => {
                 sound.pause();
                 sound.currentTime = 0;
             }).catch(() => {});
         });
+
         audioUnlocked = true;
+        console.log('Audio unlocked');
     }
 
     function playSound(name) {
         if (!soundEnabled) return;
+
         try {
-            const sound = SOUNDS[name];
-            if (sound) {
-                sound.currentTime = 0;
-                sound.play().catch(err => {
-                    console.log('Play failed:', err);
-                });
+            // Web Audio API로 재생 시도
+            if (audioContext && audioBuffers[name] && audioContext.state === 'running') {
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+
+                source.buffer = audioBuffers[name];
+                gainNode.gain.value = 0.4;
+
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                source.start(0);
+
+                // Vibration API 사용 (모바일)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+            // Fallback: HTML Audio
+            else if (SOUNDS[name]) {
+                SOUNDS[name].currentTime = 0;
+                const playPromise = SOUNDS[name].play();
+                if (playPromise) {
+                    playPromise.catch(err => console.log('Play failed:', err));
+                }
             }
         } catch (e) {
             console.log('Sound error:', e);
@@ -74,6 +160,76 @@
         playSound(pick(names));
     }
 
+    // Web API 기능
+    let wakeLock = null;
+    let notificationsEnabled = false;
+
+    // Notification API 권한 요청
+    async function requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            notificationsEnabled = (permission === 'granted');
+            if (notificationsEnabled) {
+                showNotification('알림이 켜졌어요!', '스피키가 중요한 일이 있으면 알려드릴게요 🐾');
+            }
+        } else if (Notification.permission === 'granted') {
+            notificationsEnabled = true;
+        }
+    }
+
+    function showNotification(title, body) {
+        if (!notificationsEnabled || !('Notification' in window)) return;
+        if (document.visibilityState === 'visible') return; // 페이지 보고 있으면 알림 안 함
+
+        try {
+            new Notification(title, {
+                body: body,
+                icon: 'spiki1.png',
+                badge: 'spiki1.png',
+                vibrate: [200, 100, 200],
+            });
+        } catch (e) {
+            console.log('Notification failed:', e);
+        }
+    }
+
+    // Wake Lock API (화면 꺼짐 방지)
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake lock activated');
+
+                wakeLock.addEventListener('release', () => {
+                    console.log('Wake lock released');
+                });
+            } catch (e) {
+                console.log('Wake lock failed:', e);
+            }
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    // Page Visibility API (백그라운드 감지)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            console.log('Page visible');
+            // 페이지로 돌아올 때 Wake Lock 재요청
+            if (state && !state.sleeping) {
+                requestWakeLock();
+            }
+        } else {
+            console.log('Page hidden');
+            releaseWakeLock();
+        }
+    });
+
     // 상태
     let state = {
         stats: { happiness: 100, hunger: 100, energy: 100 },
@@ -82,6 +238,7 @@
         expMax: 100,
         sleeping: false,
         animating: false,
+        autoMultiply: true, // 자동 증식 기능
     };
 
     // 스피키 배열
@@ -398,6 +555,10 @@
     function init() {
         initAudio();
 
+        // Web API 권한 요청
+        requestNotificationPermission();
+        requestWakeLock();
+
         // 먼저 저장된 상태 로드
         const savedState = loadState();
 
@@ -549,7 +710,8 @@
         const main = getMainSpiki();
         main?.setExpression('happy');
         showSpeech(pick(['음악이다!', '신나요~', '좋아요!']));
-        playRandomSound(['happy', 'happy2']);
+        // mop = 물걸레질 (신나는 소리)
+        playRandomSound(['happy', 'happy2', 'mop']);
 
         spikis.forEach(s => {
             if (!s.sleeping) s.element?.classList.add('dancing');
@@ -623,7 +785,8 @@
         main?.bounce();
         showSpeech(pick(SPEECH.feed));
         spawnEffects(['🍰', '🍩', '🍪'], 4);
-        playRandomSound(['happy', 'happy2']);
+        // 더 다양한 음성 사용 (pumpkin = 호박이 좋아요)
+        playRandomSound(['happy', 'happy2', 'pumpkin']);
 
         spikis.forEach(s => {
             if (!s.isMain) {
@@ -659,7 +822,8 @@
         main?.jump();
         showSpeech(pick(SPEECH.play));
         spawnEffects(['⭐', '🌟', '✨'], 6);
-        playRandomSound(['play', 'happy', 'happy2']);
+        // hideseek = 숨바꼭질 좋아요
+        playRandomSound(['play', 'hideseek', 'happy', 'happy2']);
 
         spikis.forEach(s => {
             if (!s.isMain) {
@@ -720,6 +884,7 @@
         showSpeech(pick(SPEECH.sleep));
         updateSleepBtn(true);
         spikis.forEach(s => s.sleep());
+        releaseWakeLock(); // 잠들 때 wake lock 해제
     }
 
     function wakeUp() {
@@ -727,6 +892,7 @@
         showSpeech(pick(SPEECH.wake));
         updateSleepBtn(false);
         spikis.forEach(s => s.wake());
+        requestWakeLock(); // 깨어날 때 wake lock 다시 활성화
     }
 
     function endAction() {
@@ -747,12 +913,39 @@
             state.stats.hunger = Math.max(0, state.stats.hunger - 1);
             state.stats.energy = Math.max(0, state.stats.energy - 0.3);
 
+            // 낮은 스탯 알림
+            if (state.stats.energy < 15) {
+                showNotification('스피키가 피곤해해요 😴', '재워주세요! 에너지가 거의 없어요.');
+            } else if (state.stats.hunger < 15) {
+                showNotification('스피키가 배고파해요 🍰', '밥을 주세요! 포만감이 거의 없어요.');
+            } else if (state.stats.happiness < 15) {
+                showNotification('스피키가 외로워해요 💔', '놀아주거나 쓰다듬어주세요!');
+            }
+
             if (state.stats.happiness < 20 && spikis.length > 1 && Math.random() < 0.3) {
                 const miniSpiki = spikis.find(s => !s.isMain);
                 if (miniSpiki) {
                     showSpeech(`${miniSpiki.name}이(가) 떠났어요... 😢`);
+                    showNotification('스피키가 떠났어요 😢', `${miniSpiki.name}이(가) 떠났어요. 행복도를 올려주세요!`);
+                    // 슬픈 음성 재생
+                    playRandomSound(['cry', 'sad']);
                     miniSpiki.remove();
                     spikis = spikis.filter(s => s.id !== miniSpiki.id);
+                    updateSpikiCount();
+                }
+            }
+
+            // 자동 증식 (높은 스탯일 때)
+            if (state.autoMultiply && spikis.length < 10) {
+                if (state.stats.happiness > 80 && state.stats.hunger > 70 &&
+                    state.stats.energy > 70 && Math.random() < 0.05) {
+                    const main = getMainSpiki();
+                    const newSpiki = new Spiki('spiki_' + Date.now(), false);
+                    newSpiki.x = (main?.x || 50) + (Math.random() - 0.5) * 30;
+                    newSpiki.y = (main?.y || 50) + (Math.random() - 0.5) * 20;
+                    spikis.push(newSpiki);
+                    showSpeech('새 친구가 저절로 나타났어요! ✨');
+                    spawnEffects(['✨', '⭐'], 3);
                     updateSpikiCount();
                 }
             }
@@ -771,10 +964,18 @@
 
         if (energy < 20) {
             main?.setExpression('sleepy');
-            if (Math.random() < 0.1) showSpeech(pick(SPEECH.tired));
+            if (Math.random() < 0.1) {
+                showSpeech(pick(SPEECH.tired));
+                // worked = 열심히 했는데
+                playRandomSound(['tired', 'worked']);
+            }
         } else if (hunger < 30 || happiness < 30) {
             main?.setExpression('worried');
-            if (Math.random() < 0.1) showSpeech(pick(SPEECH.hungry));
+            if (Math.random() < 0.1) {
+                showSpeech(pick(SPEECH.hungry));
+                // cry = 으앙 (울음소리)
+                playRandomSound(['sad', 'cry']);
+            }
         } else if (happiness > 70) {
             main?.setExpression('happy');
         } else {
@@ -842,6 +1043,7 @@
         main?.setExpression('happy');
         main?.jump();
         showSpeech('레벨 업! 🎉');
+        showNotification('레벨 업! 🎉', `스피키가 레벨 ${state.level}이 되었어요!`);
         spawnEffects(['🎉', '⭐', '🌟'], 8);
         playSound('spiki');
 
